@@ -24,44 +24,67 @@ const mocks : APIMock[] = [];
 
 /**
  * Registers a new api mock
- * @param api 
+ * @param url host to mock
+ * @param param1 app, handler, or router
+ * @returns void
  */
 export function mock(
   url: string, 
-  { app, handler, router }: Handler
+  { app, handler, router }: Handler,
 )
 {
-  if(!app)
+  if (!app)
   {
     app = express();
 
     app.use(handler || router || (() => {}));
   }
 
-  mocks.push({ supertest: supertest(app), host: url })
+  mocks.push({ supertest: supertest(app), host: url });
 }
 
-// TODO: find a better way to create a supertest type...
-export const supermock = supertest(express());
+export interface Supermock
+{
+  [method: string]: (
+    url : string | URL,
+    callback? : supertest.CallbackHandler
+  ) => supertest.Test;
+
+  (method: string, url: string | URL): supertest.Test;
+}
+
+/**
+ * @param method method
+ * @param url url
+ * @returns same as supertest(method, url)
+ */
+export const supermock = function(
+  method : string,
+  url: string | URL,
+)
+{
+  return (supermock as any)[method.toLowerCase()](url);
+} as any as Supermock;
 
 // intercept all http methods
-for(let method of methods as string[])
+for (const method of methods as string[])
 {
-  // this is a little hacky but it does the job
-  (supermock as { [k: string]: any })[method] = 
-  function(url : string, callback? : supertest.CallbackHandler) : supertest.Test
+  supermock[method] = function(
+    url : string | URL,
+    callback? : supertest.CallbackHandler,
+  ) : supertest.Test
   {
-    let { host, pathname, search } = new URL(url);
+    const { host, pathname, search } = new URL(url.toString());
 
-    for(let mock of mocks)
+    for (const mock of mocks)
     {
-      if(mock.host === host)
+      if (mock.host === host)
       {
-        return (mock.supertest  as { [k: string]: any })[method](pathname + search, callback)
-        .set('Host', host)
+        return (mock.supertest as any)[method](pathname + search, callback)
+          .set('Host', host);
       }
     }
 
     throw new Error('no mock found for ' + host);
-  }
+  };
 }
