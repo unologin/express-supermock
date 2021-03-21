@@ -1,6 +1,6 @@
 {
   "name": "express-supermock",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Mock thrid party apis using superagent and express.",
   "main": "lib/supermock.js",
   "files": [
