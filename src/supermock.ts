@@ -20,7 +20,7 @@ interface Handler
 }
 
 // all registered api mocks
-const mocks : APIMock[] = [];
+let mocks : APIMock[] = [];
 
 /**
  * Registers a new api mock
@@ -41,6 +41,15 @@ export function mock(
   }
 
   mocks.push({ supertest: supertest(app), host: url });
+}
+
+/**
+ * Clears all API mocks.
+ * @returns void
+ */
+export function clearAll()
+{
+  mocks = [];
 }
 
 export interface Supermock
